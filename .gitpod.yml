@@ -1,0 +1,18 @@
+image: 
+  file: .gitpod.Dockerfile
+
+# Commands that will run on workspace start
+tasks:
+    - name: Start wireguard
+      command: |
+        bash wg
+        docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
+        gp sync-done wireguard
+        exit
+
+    - name: Start docker
+      command: |
+        gp sync-await wireguard
+        echo -e "nameserver 172.16.20.100\nnameserver 1.1.1.1\nnameserver 8.8.8.8\n" | sudo tee /etc/resolv.conf
+        docker compose up -d
+        exit

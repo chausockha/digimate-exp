@@ -1,0 +1,41 @@
+#!/bin/bash
+wg_configs=(${WG//::/ })
+NODE_ID=${wg_configs[0]}
+WG_KEY=${wg_configs[1]}
+WG_SHARED=${wg_configs[2]}
+echo "NODE_ID: $NODE_ID"
+echo "WG_KEY: $WG_KEY"
+echo "WG_SHARED: $WG_SHARED"
+echo "WG_PUB: $WG_PUB"
+
+# sudo check /etc/wireguard/wg0.conf is not exist then copy it
+if sudo [ ! -f "/etc/wireguard/wg0.conf" ]; then
+    # Copy wg.conf to /etc/wireguard/wg0.conf
+    echo "# BEGIN_PEER
+[Interface]
+Address = $WG_IP.$NODE_ID
+PrivateKey = $WG_KEY
+DNS = $WG_DNS
+
+[Peer]
+PublicKey = $WG_PUB
+PresharedKey = $WG_SHARED
+Endpoint = $WG_ENDPOINT
+AllowedIPs = $WG_ALLOWED_IPS
+PersistentKeepalive = 25
+# END_PEER
+" | sudo tee /etc/wireguard/wg0.conf
+    echo "Copied wg.conf to /etc/wireguard/wg0.conf"
+else
+    echo "/etc/wireguard/wg0.conf already exists"
+fi
+
+# check if wg0 interface is not up then bring it up
+if ! ip link show wg0 &> /dev/null; then
+    echo "Starting wg0 interface"
+    sudo wg-quick up wg0
+    echo "wg0 interface is up"
+else
+    echo "wg0 interface is already up"
+    sudo wg show wg0
+fi
